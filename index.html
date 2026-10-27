@@ -1,0 +1,900 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Portal de Proveedores</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: sticky top bar with country + language, route-style hero of the 3 stages, then a sticky section index beside one reading column; steps carry framed screenshots that open full size. */
+:root {
+  --bg: #F4F6F3;
+  --surface: #FFFFFF;
+  --ink: #15242A;
+  --muted: #586A6F;
+  --line: #D8DFDB;
+  --accent: #0E6B63;
+  --accent-soft: #E1EFEC;
+  --signal: #B9770E;
+  --signal-soft: #FBF0DC;
+  --ok: #2F7D3A;
+  --bad: #B23A2E;
+  --scrim: rgba(10, 20, 24, .82);
+  --display: "Schibsted Grotesk", "Segoe UI", system-ui, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E171A; --surface: #142126; --ink: #E4ECEA; --muted: #93A6A7; --line: #26373C;
+    --accent: #53C2B3; --accent-soft: #173A37; --signal: #F0B54A; --signal-soft: #3A2F18;
+    --ok: #6CC27A; --bad: #F08070; --scrim: rgba(0, 0, 0, .86); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E171A; --surface: #142126; --ink: #E4ECEA; --muted: #93A6A7; --line: #26373C;
+  --accent: #53C2B3; --accent-soft: #173A37; --signal: #F0B54A; --signal-soft: #3A2F18;
+  --ok: #6CC27A; --bad: #F08070; --scrim: rgba(0, 0, 0, .86); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.6; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.15; margin: 0; }
+a { color: var(--accent); }
+button, select, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Top bar */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.bar .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding-block: 12px; }
+.brand { display: flex; flex-direction: column; margin-right: auto; min-width: 0; }
+.brand b { font-family: var(--display); font-size: 1.05rem; letter-spacing: .01em; }
+.brand span { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.controls label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; display: flex; align-items: center; gap: 8px; }
+select { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; min-width: 0; max-width: 220px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
+.seg button { background: transparent; border: 0; padding: 7px 12px; cursor: pointer; font-weight: 600; font-size: .9rem; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+.helpLink { font-weight: 600; font-size: .9rem; text-decoration: none; border: 1px solid var(--accent); border-radius: 8px; padding: 6px 12px; background: none; color: var(--accent); cursor: pointer; }
+
+/* Hero */
+.hero { padding-block: 44px 28px; }
+.eyebrow { font-family: var(--mono); font-size: .78rem; color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+.hero h1 { font-size: clamp(1.9rem, 4.4vw, 3rem); font-weight: 800; margin-top: 8px; max-width: 22ch; }
+.hero p.lead { color: var(--muted); max-width: 62ch; margin: 14px 0 0; font-size: 1.08rem; }
+.route { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 32px; position: relative; }
+.route::before { content: ""; position: absolute; left: 10px; right: 10px; top: 9px; border-top: 2px dashed var(--line); }
+.stop { position: relative; padding-right: 16px; min-width: 0; }
+.stop .dot { width: 20px; height: 20px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); position: relative; }
+.stop:first-child .dot { background: var(--accent); }
+.stop small { display: block; font-family: var(--mono); font-size: .72rem; color: var(--muted); margin-top: 12px; letter-spacing: .06em; }
+.stop strong { display: block; font-family: var(--display); font-size: 1.02rem; line-height: 1.3; }
+.ask { margin-top: 30px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+.ask strong { font-family: var(--display); font-size: 1rem; }
+.ask .seg button { padding: 8px 14px; }
+.ask .opt { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: .92rem; color: var(--muted); }
+.ask .opt input { width: 18px; height: 18px; accent-color: var(--accent); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; border-radius: 8px; padding: 9px 16px; font-weight: 600; text-decoration: none; border: 1px solid var(--accent); cursor: pointer; background: transparent; color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--surface); }
+
+/* Body */
+.layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 40px; padding-block: 12px 64px; }
+.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 84px); align-self: start; display: flex; flex-direction: column; gap: 2px; border-left: 1px solid var(--line); }
+.toc button { text-align: left; background: none; border: 0; border-left: 2px solid transparent; margin-left: -1px; padding: 6px 12px; cursor: pointer; color: var(--muted); font-size: .92rem; line-height: 1.35; }
+.toc button.on { color: var(--ink); border-left-color: var(--accent); font-weight: 600; }
+.toc .sep { font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); padding: 14px 12px 4px; }
+main { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.partTitle { font-family: var(--mono); font-size: .78rem; color: var(--accent); letter-spacing: .08em; text-transform: uppercase; margin-top: 18px; }
+section.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 26px 28px; scroll-margin-top: calc(env(safe-area-inset-top, 0px) + 84px); min-width: 0; }
+section.card header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 14px; }
+section.card header .num { font-family: var(--mono); font-size: .8rem; color: var(--accent); flex: none; }
+section.card h2 { font-size: 1.35rem; font-weight: 700; }
+section.card p { margin: 0 0 12px; max-width: 68ch; }
+ol.steps { margin: 0; padding: 0; list-style: none; counter-reset: s; display: flex; flex-direction: column; gap: 16px; }
+ol.steps > li { counter-increment: s; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; }
+ol.steps > li > div { max-width: 70ch; min-width: 0; }
+ol.steps > li::before { content: counter(s); font-family: var(--mono); font-size: .8rem; font-weight: 600; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); margin-top: 1px; }
+ul.plain { margin: 0; padding-left: 20px; max-width: 68ch; }
+.ui { font-family: var(--mono); font-size: .84em; background: var(--bg); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; overflow-wrap: anywhere; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.note { display: grid; grid-template-columns: 4px minmax(0, 1fr); gap: 14px; background: var(--signal-soft); border-radius: 8px; padding: 12px 16px 12px 0; margin-top: 14px; max-width: 70ch; }
+.note::before { content: ""; background: var(--signal); border-radius: 0 3px 3px 0; }
+.note b { color: var(--signal); }
+.note.info { background: var(--accent-soft); }
+.note.info::before { background: var(--accent); }
+.note.info b { color: var(--accent); }
+
+/* Screenshots */
+.shot { margin: 10px 0 0; max-width: 560px; }
+.shot button { display: block; width: 100%; padding: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--bg); cursor: zoom-in; text-align: left; }
+.shot .chrome { display: flex; gap: 5px; padding: 6px 8px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.shot .chrome i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+.shot img { display: block; width: 100%; max-height: 300px; object-fit: cover; object-position: top left; }
+.shot figcaption { font-size: .82rem; color: var(--muted); margin-top: 6px; }
+.noShots .shot { display: none; }
+.lightbox { position: fixed; inset: 0; z-index: 20; background: var(--scrim); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: calc(env(safe-area-inset-top, 0px) + 16px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 16px) max(16px, env(safe-area-inset-left, 0px)); cursor: zoom-out; }
+.lightbox img { max-width: 100%; max-height: calc(100% - 60px); border-radius: 6px; background: #fff; }
+.lightbox p { color: #fff; margin: 0; font-size: .95rem; text-align: center; max-width: 70ch; }
+.lightbox button { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 12px); right: max(12px, env(safe-area-inset-right, 0px)); background: #fff; color: #15242A; border: 0; border-radius: 8px; padding: 6px 12px; font-weight: 600; cursor: pointer; }
+
+/* Bank table */
+.table { overflow-x: auto; margin-top: 4px; }
+table { border-collapse: collapse; width: 100%; min-width: 460px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: .74rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+td:first-child { font-weight: 600; width: 40%; }
+.blank { font-family: var(--mono); font-size: .78rem; color: var(--signal); border: 1px dashed var(--signal); border-radius: 5px; padding: 1px 6px; overflow-wrap: anywhere; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+
+/* CLABE checker */
+.tool { margin-top: 20px; border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; background: var(--bg); }
+.tool h3 { font-size: 1rem; }
+.tool p { font-size: .95rem; color: var(--muted); }
+.tool input { width: 100%; max-width: 360px; font-family: var(--mono); font-size: 1.05rem; letter-spacing: .08em; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.clabe-parts { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px; font-family: var(--mono); font-size: .85rem; font-variant-numeric: tabular-nums; }
+.clabe-parts span { color: var(--muted); }
+.verdict { margin-top: 10px; font-weight: 600; font-size: .95rem; }
+.verdict.ok { color: var(--ok); }
+.verdict.bad { color: var(--bad); }
+
+/* Checklist */
+.progress { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; font-variant-numeric: tabular-nums; flex-wrap: wrap; }
+.meter { flex: 1 1 200px; height: 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 99px; overflow: hidden; }
+.meter i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s; }
+.progress span { font-size: .9rem; color: var(--muted); }
+.checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.checks li { border-top: 1px solid var(--line); }
+.checks li:last-child { border-bottom: 1px solid var(--line); }
+.checks label { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 12px; padding: 12px 4px; cursor: pointer; }
+.checks input { width: 18px; height: 18px; margin-top: 4px; accent-color: var(--accent); }
+.checks .t { display: block; }
+.checks .d { display: block; color: var(--muted); font-size: .92rem; }
+.checks input:checked + span .t { text-decoration: line-through; text-decoration-color: var(--muted); color: var(--muted); }
+.sub { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.sub div { font-size: .92rem; color: var(--muted); padding-left: 12px; border-left: 2px solid var(--line); }
+.who { font-size: .85rem; color: var(--muted); margin-bottom: 10px; }
+
+/* FAQ */
+.faq details { border-top: 1px solid var(--line); }
+.faq details:last-child { border-bottom: 1px solid var(--line); }
+.faq summary { cursor: pointer; padding: 13px 4px; font-weight: 600; list-style: none; display: grid; grid-template-columns: minmax(0, 1fr) 20px; gap: 12px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; font-family: var(--mono); color: var(--accent); text-align: center; }
+.faq details[open] summary::after { content: "–"; }
+.faq .a { padding: 0 4px 14px; color: var(--ink); max-width: 68ch; }
+.faq .tag { font-family: var(--mono); font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-left: 8px; font-weight: 400; }
+
+/* Help */
+.helpGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.channel { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.channel h3 { font-size: 1rem; }
+.channel p { font-size: .92rem; color: var(--muted); margin: 0; }
+.channel .val { font-family: var(--mono); font-size: .88rem; overflow-wrap: anywhere; }
+.channel .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 6px; }
+.small { padding: 5px 12px; font-size: .88rem; }
+
+/* CLABE anatomy + bank list */
+.anatomy { display: flex; flex-wrap: wrap; gap: 4px; margin: 14px 0 6px; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.anatomy div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.anatomy b { font-size: 1.15rem; letter-spacing: .12em; padding: 6px 10px; border-radius: 6px; background: var(--bg); border: 1px solid var(--line); font-weight: 600; }
+.anatomy .key b { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+.anatomy span { font-family: var(--body); font-size: .78rem; color: var(--muted); }
+.anatomy .key span { color: var(--accent); font-weight: 600; }
+.banks { margin-top: 14px; max-height: 420px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
+.banks table { min-width: 420px; }
+.banks thead th { position: sticky; top: 0; background: var(--surface); }
+.banks td { padding: 7px 12px; font-size: .94rem; }
+.banks td:first-child { width: 70px; font-family: var(--mono); font-weight: 600; color: var(--accent); }
+.banks td:last-child { font-family: var(--mono); font-size: .85rem; width: 140px; }
+.banks td.none { color: var(--muted); font-family: var(--body); }
+
+/* Questionnaire guide */
+.qgroup { margin-top: 18px; }
+.qgroup h3 { font-size: 1.02rem; display: flex; align-items: baseline; gap: 10px; }
+.qgroup h3 .ui { font-weight: 600; }
+.qlist { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; }
+.qlist li { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.qlist .qn { font-family: var(--mono); font-size: .82rem; font-weight: 600; color: var(--accent); padding-top: 2px; }
+.qlist .qq { display: block; color: var(--muted); font-size: .92rem; }
+.qlist .qa { display: block; font-weight: 600; }
+.qlist .qt { display: block; font-size: .9rem; margin-top: 4px; color: var(--signal); }
+.tips { margin: 6px 0 0; padding-left: 20px; max-width: 70ch; display: flex; flex-direction: column; gap: 6px; }
+
+footer { border-top: 1px solid var(--line); padding-block: 24px 40px; color: var(--muted); font-size: .88rem; }
+
+@media (max-width: 820px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .toc { display: none; }
+  section.card { padding: 20px 18px; }
+  .route { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .route::before { left: 9px; right: auto; top: 10px; bottom: 10px; border-top: 0; border-left: 2px dashed var(--line); }
+  .stop { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 0 14px; }
+  .stop small { margin-top: 0; }
+  .stop small, .stop strong { grid-column: 2; }
+  .stop .dot { grid-row: 1 / span 2; }
+  .ask .opt { margin-left: 0; }
+  .table table, .banks table { min-width: 0; }
+  .anatomy b { font-size: 1rem; padding: 5px 7px; }
+}
+@media (prefers-reduced-motion: reduce) { .meter i { transition: none; } }
+</style>
+
+</head>
+<body>
+<div class="bar">
+  <div class="wrap">
+    <div class="brand"><b id="brandName"></b><span id="brandSub"></span></div>
+    <div class="controls">
+      <label for="country"><span id="lblCountry"></span>
+        <select id="country"></select>
+      </label>
+      <div class="seg" role="group" aria-label="Idioma / Language">
+        <button type="button" id="lang-es" data-lang="es">ES</button>
+        <button type="button" id="lang-en" data-lang="en">EN</button>
+      </div>
+      <button type="button" class="helpLink" id="helpTop"></button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap hero">
+  <div class="eyebrow" id="eyebrow"></div>
+  <h1 id="title"></h1>
+  <p class="lead" id="lead"></p>
+  <div class="route" id="route"></div>
+  <div class="ask" id="ask"></div>
+  <div class="actions" id="actions"></div>
+</div>
+
+<div class="wrap layout">
+  <nav class="toc" id="toc" aria-label="Secciones"></nav>
+  <main id="content"></main>
+</div>
+
+<footer><div class="wrap" id="foot"></div></footer>
+<div class="lightbox" id="lightbox" hidden></div>
+
+<script>
+/*CONFIG*/
+const CONFIG = {
+  company: "Volaris",
+  supportEmail: "",    // correo de soporte; aparece en el Centro de ayuda
+  supportPhone: "",    // teléfono opcional
+  supportHours: { es: "Lunes a viernes, 9:00 a 18:00 (hora de Ciudad de México)", en: "Monday to Friday, 9:00 to 18:00 (Mexico City time)" },
+  bookingUrl: "",      // liga de Microsoft Bookings, Teams o Calendly. Solo se muestra a proveedores de México.
+  imgBase: "img/",
+  // Ruta del PDF por región e idioma. Vacío = no se muestra el botón de descarga.
+  pdfs: {
+    mx:    { es: "manuales/manual-mexico.pdf" },
+    latam: { es: "manuales/manual-latinoamerica.pdf" },
+    sv:    { es: "manuales/manual-latinoamerica.pdf" },
+    na:    { en: "manuales/manual-usa-europe.pdf" }
+  }
+};
+/*END CONFIG*/
+
+const C = CONFIG.company;
+const COUNTRIES = [
+  { id: "mx", region: "mx", lang: "es", es: "México", en: "Mexico" },
+  { id: "co", region: "latam", lang: "es", es: "Colombia", en: "Colombia" },
+  { id: "cr", region: "latam", lang: "es", es: "Costa Rica", en: "Costa Rica" },
+  { id: "sv", region: "sv", lang: "es", es: "El Salvador", en: "El Salvador" },
+  { id: "gt", region: "latam", lang: "es", es: "Guatemala", en: "Guatemala" },
+  { id: "hn", region: "latam", lang: "es", es: "Honduras", en: "Honduras" },
+  { id: "pa", region: "latam", lang: "es", es: "Panamá", en: "Panama" },
+  { id: "pe", region: "latam", lang: "es", es: "Perú", en: "Peru" },
+  { id: "us", region: "na", lang: "en", es: "Estados Unidos", en: "United States" },
+  { id: "eu", region: "na", lang: "en", es: "Europa", en: "Europe" }
+];
+// Which screenshot set and click-path each region follows
+const FLOW_OF = { mx: "la", latam: "la", sv: "la", na: "na" };
+
+const UI = {
+  es: {
+    sub: "Portal de proveedores", country: "País", eyebrow: "SAP Ariba · Guía de registro", help: "Ayuda",
+    title: `Regístrese como proveedor de ${C}`,
+    lead: `Siga estos pasos para crear su cuenta en Ariba Network y completar el formulario de registro. Elija su país arriba: la información bancaria y los documentos cambian según el país.`,
+    stages: ["Crear su cuenta en Ariba Network", `Completar el formulario de registro de ${C}`, "Revisión de nuestro equipo y aprobación"],
+    stage: "Etapa", start: "Empezar", pdf: "Descargar manual en PDF",
+    askQ: "¿Su empresa ya tiene cuenta en Ariba Network?", askNo: "No, voy a crearla", askYes: "Sí, ya tengo", askAll: "No sé",
+    shots: "Mostrar capturas de pantalla", zoom: "Clic para ampliar", close: "Cerrar",
+    progress: (a, b) => `${a} de ${b} documentos listos`,
+    guide: "Guía paso a paso", helpPart: "Ayuda",
+    foot: (c) => `Información para proveedores de ${c}. Contenido basado en el manual oficial de registro en SAP Ariba.`,
+    copied: "Copiado", copy: "Copiar"
+  },
+  en: {
+    sub: "Supplier portal", country: "Country", eyebrow: "SAP Ariba · Registration guide", help: "Help",
+    title: `Register as a ${C} supplier`,
+    lead: `Follow these steps to create your Ariba Network account and complete the registration form. Choose your country above: banking details and required documents depend on it.`,
+    stages: ["Create your Ariba Network account", `Complete the ${C} registration form`, "Review by our team and approval"],
+    stage: "Stage", start: "Get started", pdf: "Download PDF manual",
+    askQ: "Does your company already have an Ariba Network account?", askNo: "No, I'll create one", askYes: "Yes, I have one", askAll: "Not sure",
+    shots: "Show screenshots", zoom: "Click to enlarge", close: "Close",
+    progress: (a, b) => `${a} of ${b} documents ready`,
+    guide: "Step-by-step guide", helpPart: "Help",
+    foot: (c) => `Information for suppliers in ${c}. Content based on the official SAP Ariba registration manual.`,
+    copied: "Copied", copy: "Copy"
+  }
+};
+
+const ui = (s) => `<span class="ui">${s}</span>`;
+const blank = (L) => `<span class="blank">${L === "es" ? "dejar en blanco" : "leave blank"}</span>`;
+const note = (html, info) => `<div class="note${info ? " info" : ""}"><div>${html}</div></div>`;
+const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+
+/* ---------- Click paths with screenshots (img = file key, cap = caption) ---------- */
+// Ariba always lists accounts that share the company's legal name; most suppliers get stuck here
+const EXISTING = {
+  es: note(`<b>¿Le aparece "Hemos encontrado cuentas existentes"?</b> Es normal: Ariba siempre muestra las cuentas que ya existen con la misma razón social. Si usted reconoce esa cuenta y tiene acceso a ella, continúe con ${ui("Usar cuenta existente")}. Si no la reconoce o no tiene acceso, haga clic en ${ui("Crear cuenta nueva")} y siga con el registro.`),
+  en: note(`<b>Seeing "We found existing accounts"?</b> That's normal: Ariba always lists accounts that already exist with the same company name. If you recognize that account and have access to it, continue with ${ui("Use Existing Account")}. If you don't recognize it or can't access it, click ${ui("Create New Account")} and continue.`)
+};
+
+const FLOWS = {
+  la: {
+    invitacion: [
+      { es: `Busque en su bandeja de entrada el correo de invitación de ${C}.`, en: `Look in your inbox for the invitation email from ${C}.`, img: "invite", cap: { es: "Correo de invitación", en: "Invitation email" } },
+      { es: "Si no lo encuentra, revise la carpeta de <b>correo no deseado o spam</b>.", en: "If it is not there, check your <b>spam or junk</b> folder." }
+    ],
+    "cuenta-nueva": [
+      { es: `Abra el enlace del correo y haga clic en ${ui("Crear cuenta nueva")}.`, en: `Open the link in the email and click ${ui("Create new account")}.`, img: "landing", cap: { es: "Pantalla de bienvenida", en: "Welcome screen" }, after: EXISTING },
+      { es: `Escriba su correo electrónico y haga clic en ${ui("Continuar")} para verificarlo.`, en: `Enter your email address and click ${ui("Continue")} to verify it.`, img: "checkmail", cap: { es: "Compruebe el correo", en: "Check your email" } },
+      { es: "Le llegará un correo de SAP Business Network con una <b>contraseña de un solo uso</b>. Es válida durante 30 minutos.", en: "SAP Business Network will email you a <b>one-time password</b>. It is valid for 30 minutes.", img: "otpmail", cap: { es: "Correo con el código", en: "Email with the code" } },
+      { es: `Escriba el código y haga clic en ${ui("Continuar")}.`, en: `Enter the code and click ${ui("Continue")}.`, img: "otp", cap: { es: "Contraseña de un solo uso", en: "One-time password" } },
+      { es: `Llene la información de la empresa. Los campos obligatorios tienen <b>asterisco rojo</b>. El campo ${ui("Número DUNS")} se deja ${blank("es")}.`, en: `Fill in your company information. Required fields have a <b>red asterisk</b>. Leave ${ui("DUNS Number")} ${blank("en")}.`, img: "company", cap: { es: "Información de la empresa", en: "Company information" } },
+      { es: `Llene los datos del administrador, acepte los términos de uso, marque la casilla de verificación y haga clic en ${ui("Crear cuenta")}.`, en: `Fill in the administrator details, accept the terms of use, tick the captcha and click ${ui("Create account")}.`, img: "admin", cap: { es: "Cuenta del administrador", en: "Administrator account" } },
+      { es: `Si aparece una recomendación de dirección, elija ${ui("Usar la dirección introducida")}.`, en: `If an address recommendation appears, choose ${ui("Use the address entered")}.`, img: "address", cap: { es: "Recomendación de dirección", en: "Address recommendation" } },
+      { es: "Verá la pantalla <b>Casi está</b>. Recibirá un correo con sus credenciales.", en: "You will see the <b>Almost there</b> screen and receive an email with your credentials.", img: "almost", cap: { es: "Casi está", en: "Almost there" } }
+    ],
+    "cuenta-existente": [
+      { es: `Abra el enlace del correo y haga clic en ${ui("Usar cuenta existente")}.`, en: `Open the link in the email and click ${ui("Use existing account")}.`, img: "existing", cap: { es: "Usar cuenta existente", en: "Use existing account" }, after: EXISTING },
+      { es: `Escriba su usuario y contraseña de Ariba Network y haga clic en ${ui("Conectar")}.`, en: `Enter your Ariba Network username and password and click ${ui("Log in")}.`, img: "login", cap: { es: "Inicio de sesión", en: "Login" } }
+    ],
+    cuestionario: [
+      { es: `Inicie sesión y vaya a ${ui("Ariba Proposals and Questionnaires")}.`, en: `Log in and go to ${ui("Ariba Proposals and Questionnaires")}.` },
+      { es: `Verifique que el cliente seleccionado sea <b>${C}</b>.`, en: `Make sure the selected customer is <b>${C}</b>.` },
+      { es: `En <b>Cuestionarios de registro</b>, haga clic en ${ui("Supplier registration questionnaire")}.`, en: `Under <b>Registration questionnaires</b>, click ${ui("Supplier registration questionnaire")}.`, img: "home", cap: { es: "Ariba Proposals and Questionnaires", en: "Ariba Proposals and Questionnaires" } }
+    ],
+    enviar: [
+      { es: "Revise que toda la información sea correcta.", en: "Check that all the information is correct." },
+      { es: `Haga clic en ${ui("Enviar respuesta completa")}.`, en: `Click ${ui("Submit Full Response")}.`, img: "submit", cap: { es: "Botones al final del cuestionario", en: "Buttons at the end of the questionnaire" } },
+      { es: "Nuestro equipo revisará su registro y le enviará retroalimentación o la aprobación.", en: "Our team will review your registration and send feedback or approval." }
+    ]
+  },
+  na: {
+    invitacion: [
+      { es: `Busque en su bandeja de entrada el correo de invitación de ${C}.`, en: `Look in your inbox for the invitation email from ${C}.`, img: "invite", cap: { es: "Correo de invitación", en: "Invitation email" } },
+      { es: "Si no lo encuentra, revise la carpeta de <b>correo no deseado o spam</b>.", en: "If it is not there, check your <b>spam or junk</b> folder." }
+    ],
+    "cuenta-nueva": [
+      { es: `Abra el enlace del correo y haga clic en ${ui("Crear cuenta nueva")}.`, en: `Open the link in the email and click ${ui("Create New Account")}.`, img: "landing", cap: { es: "Pantalla de bienvenida", en: "Welcome screen" }, after: EXISTING },
+      { es: `Llene el formulario con datos exactos. El campo ${ui("Número DUNS")} se deja ${blank("es")}.`, en: `Fill in the form accurately. Leave the ${ui("DUNS Number")} field ${blank("en")}.`, img: "form", cap: { es: "Información de la empresa", en: "Company information" } },
+      { es: `Acepte los términos de SAP, marque la casilla de verificación y haga clic en ${ui("Crear cuenta")}.`, en: `Accept SAP's Terms and Conditions, tick the captcha and click ${ui("Create Account")}.`, img: "terms", cap: { es: "Términos y crear cuenta", en: "Terms and create account" } },
+      { es: "Verá la pantalla para confirmar su correo.", en: "You will see the email confirmation screen.", img: "checkmail", cap: { es: "Confirme su correo", en: "Confirm your email" } },
+      { es: `Abra el correo de SAP y haga clic en ${ui("Confirmar correo electrónico")}. Sin este paso el registro no es válido.`, en: `Open SAP's email and click ${ui("Confirm email address")}. Without this step your registration is not valid.`, img: "confirmmail", cap: { es: "Correo de confirmación", en: "Confirmation email" } },
+      { es: `Recibirá un correo con sus credenciales. En la siguiente pantalla haga clic en ${ui("No volver a mostrar")}.`, en: `You will receive your credentials by email. On the next screen click ${ui("Don't show me this again")}.`, img: "dontshow", cap: { es: "Pantalla final", en: "Final screen" } }
+    ],
+    "cuenta-existente": [
+      { es: `Abra el enlace del correo y haga clic en ${ui("Usar cuenta existente")}.`, en: `Open the link in the email and click ${ui("Use Existing Account")}.`, img: "existing", cap: { es: "Usar cuenta existente", en: "Use existing account" }, after: EXISTING },
+      { es: "Escriba sus credenciales de Ariba Network.", en: "Enter your Ariba Network credentials.", img: "login", cap: { es: "Inicio de sesión", en: "Login" } },
+      { es: "Marque la casilla para aceptar los términos de uso de Ariba Network.", en: "Tick the checkbox to accept the Ariba Network terms of use.", img: "accept", cap: { es: "Aceptar términos de uso", en: "Accept terms of use" } }
+    ],
+    cuestionario: [
+      { es: `Inicie sesión y vaya a ${ui("Ariba Proposals and Questionnaires")}.`, en: `Log in and go to ${ui("Ariba Proposals and Questionnaires")}.` },
+      { es: `Verifique que el cliente seleccionado sea <b>${C}</b>.`, en: `Make sure the selected customer is <b>${C}</b>.` },
+      { es: `Haga clic en ${ui("Supplier registration questionnaire")}.`, en: `Click ${ui("Supplier registration questionnaire")}.`, img: "home", cap: { es: "Ariba Proposals and Questionnaires", en: "Ariba Proposals and Questionnaires" } }
+    ],
+    enviar: [
+      { es: "Revise que toda la información sea correcta y completa.", en: "Check that all the information is correct and complete." },
+      { es: `Haga clic en ${ui("Enviar respuesta completa")}.`, en: `Click ${ui("Submit Full Response")}.`, img: "submit", cap: { es: "Enviar respuesta", en: "Submit response" } },
+      { es: `Confirme el envío en la ventana que aparece.`, en: `Confirm in the dialog that appears.`, img: "confirm", cap: { es: "Confirmar envío", en: "Confirm submission" } }
+    ]
+  }
+};
+
+const NOTES = {
+  invitacion: { es: note(`<b>Remitente:</b> Ariba envía el correo de forma automática desde el dominio ${ui("@ansmtp.ariba.com")}. No responda a ese correo.`, true), en: note(`<b>Sender:</b> Ariba sends this email automatically from the ${ui("@ansmtp.ariba.com")} domain. Do not reply to it.`, true) },
+  "cuenta-nueva": { es: note("<b>Importante:</b> guarde sus credenciales en un lugar seguro, no las comparta con nadie y téngalas siempre a la mano."), en: note("<b>Important:</b> keep your credentials secure, do not share them with anyone, and keep them where you can find them.") },
+  cuestionario: { es: note("<b>Tip:</b> en esta misma pantalla verá también los eventos a los que lo inviten (RFI, RFP, subastas).", true), en: note("<b>Tip:</b> this screen also lists any events you are invited to (RFI, RFP, auctions).", true) },
+  enviar: { es: note(`<b>¿No terminó?</b> Guarde con ${ui("Guardar borrador")} y continúe después.`, true), en: note(`<b>Not finished?</b> Click ${ui("Save Draft")} and continue later.`, true) }
+};
+const INTROS = {
+  "cuenta-nueva": { es: "<p>Haga esto si su empresa <b>todavía no tiene</b> cuenta en Ariba Network.</p>", en: "<p>Do this if your company <b>does not have</b> an Ariba Network account yet.</p>" }
+};
+
+function stepsHtml(flow, id, L) {
+  return `<ol class="steps">${FLOWS[flow][id].map(s => {
+    const fig = s.img ? `<figure class="shot"><button type="button" data-zoom="${CONFIG.imgBase}${flow}-${s.img}.jpg" data-cap="${esc(s.cap[L])}" aria-label="${esc(s.cap[L])}: ${UI[L].zoom}"><span class="chrome"><i></i><i></i><i></i></span><img src="${CONFIG.imgBase}${flow}-${s.img}.jpg" alt="${esc(s.cap[L])}" loading="lazy"></button><figcaption>${s.cap[L]} · ${UI[L].zoom}</figcaption></figure>` : "";
+    return `<li><div>${s[L]}${s.after ? s.after[L] : ""}${fig}</div></li>`;
+  }).join("")}</ol>`;
+}
+
+const SECTIONS = [
+  { id: "invitacion", title: { es: "Revise la invitación por correo", en: "Check your invitation email" } },
+  { id: "cuenta-nueva", title: { es: "Cree su cuenta en Ariba Network", en: "Create your Ariba Network account" }, only: "no" },
+  { id: "cuenta-existente", title: { es: "Si ya tiene cuenta", en: "If you already have an account" }, only: "yes" },
+  { id: "cuestionario", title: { es: "Abra el cuestionario de registro", en: "Open the registration questionnaire" } },
+  { id: "formulario", title: { es: "Llene el cuestionario pregunta por pregunta", en: "Fill in the questionnaire, question by question" }, body: (L, r) => questionBody(L, r) },
+  { id: "banco", title: { es: "Información bancaria", en: "Banking information" }, body: (L, r) => bankBody(L, r) },
+  { id: "documentos", title: { es: "Documentos requeridos", en: "Required documents" }, body: (L, r, country) => docsBody(L, r, country) },
+  { id: "enviar", title: { es: "Revise y envíe", en: "Review and submit" } }
+];
+const HELP_SECTIONS = [
+  { id: "preguntas", title: { es: "Preguntas frecuentes", en: "Frequently asked questions" }, tag: "FAQ", body: (L, r) => faqBody(L, r) },
+  { id: "contacto", title: { es: "Centro de ayuda", en: "Help center" }, tag: "@", body: (L, r) => helpBody(L, r) }
+];
+
+/* ---------- Banking ---------- */
+const BANK = {
+  mx: [
+    [{ es: "Tipo de banco", en: "Type of bank" }, { es: "Nacional", en: "National" }],
+    [{ es: "País/región", en: "Country/region" }, { es: "México", en: "Mexico" }],
+    [{ es: "Nombre del titular de la cuenta", en: "Account holder name" }, { es: "Razón social tal como aparece en el estado de cuenta", en: "Legal company name exactly as on the bank statement" }],
+    [{ es: "Clave bancaria / número de enrutamiento ABA", en: "Bank key / ABA routing number" }, { es: "Los <b>3 primeros dígitos</b> de su CLABE interbancaria (vea la tabla de abajo)", en: "The <b>first 3 digits</b> of your CLABE (see the table below)" }],
+    [{ es: "Número de cuenta", en: "Account number" }, { es: "Los 18 dígitos de la CLABE interbancaria", en: "All 18 digits of the CLABE" }],
+    [{ es: "Código IBAN", en: "IBAN" }, "BLANK"],
+    [{ es: "Clave de control del banco", en: "Bank control key" }, { es: "La moneda de su cuenta: <b>Pesos mexicanos [MX]</b>", en: "Your account currency: <b>Pesos mexicanos [MX]</b>" }],
+    [{ es: "Referencia", en: "Reference" }, { es: "Opcional: una referencia general para identificar sus pagos, o déjelo en blanco", en: "Optional: a general reference to identify your payments, or leave blank" }],
+    [{ es: "Adjunto", en: "Attachment" }, { es: "Carátula o estado de cuenta donde se vea la CLABE de 18 dígitos", en: "Bank statement cover page showing the 18-digit CLABE" }]
+  ],
+  latam: [
+    [{ es: "Nombre del titular de la cuenta", en: "Account holder name" }, { es: "Nombre legal completo, tal como aparece en la facturación", en: "Full legal name, exactly as on your invoices" }],
+    [{ es: "Clave bancaria / número de enrutamiento (ABA)", en: "Bank key / routing number (ABA)" }, { es: "Exactamente como aparece en su documento bancario", en: "Exactly as shown on your bank document" }],
+    [{ es: "Número de cuenta", en: "Account number" }, { es: "Exactamente como aparece en su documento bancario", en: "Exactly as shown on your bank document" }],
+    [{ es: "Código IBAN", en: "IBAN" }, { es: "Solo si aplica en su país; si no, déjelo en blanco", en: "Only if it applies in your country; otherwise leave blank" }],
+    [{ es: "Clave de control del banco", en: "Bank control key" }, { es: "Seleccione la moneda de su cuenta", en: "Select your account currency" }],
+    [{ es: "Referencia", en: "Reference" }, { es: "Opcional, o déjelo en blanco", en: "Optional, or leave blank" }],
+    [{ es: "Adjunto", en: "Attachment" }, { es: "Estado de cuenta, constancia o certificado bancario donde se vean los datos capturados", en: "Bank statement or bank certificate showing the details you entered" }]
+  ],
+  na: [
+    [{ es: "Tipo de banco", en: "Type of bank" }, { es: "Nacional", en: "National" }],
+    [{ es: "Nombre del titular de la cuenta", en: "Account holder name" }, { es: "Tal como aparece en el estado de cuenta", en: "As shown on the bank statement" }],
+    [{ es: "País del banco", en: "Bank country" }, { es: "El país donde está su cuenta", en: "The country where your account is held" }],
+    [{ es: "Clave bancaria / número de enrutamiento ABA", en: "Bank key / ABA routing number" }, { es: "En Estados Unidos, su ABA routing number", en: "In the US, your ABA routing number" }],
+    [{ es: "Número de cuenta", en: "Account number" }, { es: "El número de cuenta completo", en: "The full account number" }],
+    [{ es: "Código IBAN", en: "IBAN code" }, { es: "Cuentas de Estados Unidos: en blanco. Solo si su país usa IBAN", en: "US accounts: leave blank. Only if your country uses IBAN" }],
+    [{ es: "Clave de control del banco", en: "Bank control key" }, { es: "La moneda de su cuenta, por ejemplo <b>US Dollar [US]</b>", en: "Your account currency, for example <b>US Dollar [US]</b>" }],
+    [{ es: "Referencia", en: "Reference" }, { es: "Opcional, o déjelo en blanco", en: "Optional, or leave blank" }],
+    [{ es: "Adjunto", en: "Attachment" }, { es: "Estado de cuenta o documento del banco donde se vean el routing number y la cuenta", en: "Account statement or bank document where the routing and account numbers are clearly visible" }]
+  ]
+};
+BANK.sv = BANK.latam;
+
+// Mexico only: bank key = first 3 digits of the CLABE. [key, bank, SWIFT] from the procurement team's list.
+const BANKS_MX = [["002", "Banco Nacional de México SA", "BNMXMXMM"], ["006", "Banco Nacional de Comercio Exterior S N C", "BNCEMXMM"], ["012", "BBVA Bancomer SA", "BCMRMXMM"], ["014", "Banco Santander SA", "BMSXMXMM"], ["019", "Banco Nacional del Ejercito Fuerza Aerea y Armada S N C", "EJERMXMM"], ["021", "HSBC México SA", "BIMEMXMM"], ["028", "Spin by Oxxo", ""], ["030", "Banco del Bajio S A", "BJIOMXML"], ["032", "IXE Banco S A", "IXEBMXMM"], ["036", "Banco Inbursa SA", "INBUMXMM"], ["042", "Banca Mifel S A", ""], ["044", "Scotiabank Inverlat SA", "MBCOMXMM"], ["058", "Banco Regional de Monterrey S A", "RGIOMXMT"], ["059", "Banco Invex S A", ""], ["060", "Bansi S A", ""], ["062", "Banca Afirme S A", ""], ["072", "Banco Mercantil del Norte SA", "MENOMXMT"], ["103", "American Express Bank Mexico S A", ""], ["106", "Bank of America Mexico S A", ""], ["110", "Banco JP Morgan SA", "CHASMXMX"], ["112", "Banco Monex S A", "MONXMXMMXXX"], ["113", "BANCO VE POR MAS SA", "CBAKMXM1"], ["124", "Banco Citi México, S.A., Institución de Banca Múltiple, Grup", "CITIMXMMXXX"], ["127", "Banco Azteca S A", "AZTKMXMM"], ["128", "Banco Autofin Mexico SA", ""], ["130", "Compartamos Banco", ""], ["131", "Banco Ahorro Famsa SA", ""], ["132", "Banco Multiva SA", ""], ["133", "Banco Actinver SA Institución de Banca Múltiple", "ACIOMXMMBRA"], ["134", "Banco Wal Mart De México Adelante SA", ""], ["136", "Inter Banco SA Institución De Banca Múltiple", ""], ["137", "BanCoppel SA", ""], ["138", "Banco Uala", ""], ["140", "CONSUBANCO SA", ""], ["143", "CIBanco SA Institución De Banca Múltiple", "CIMXMXMM"], ["145", "Banco Base SA Insitucion de Banca Multiple Grupo Financiero", "BBSEMXMX"], ["150", "Banco Inmobiliario Mexicano", ""], ["156", "El Banco de Sabadell S A", "BSABMXMM"], ["166", "Banco Del Ahorro Nacional y Servicios Financieros SNC", ""], ["167", "Hey Banco, S.A., Institución de Banca Múltiple, Banregio Gru", ""], ["638", "Nu Mexico Financiera SA de CV", ""], ["646", "Sistema de transferencias y pagos SOFOM", ""], ["653", "UNA LANA PAY", ""], ["661", "Klar Technologies, S.A. de C.V., S.F.P", ""], ["684", "Operadora De Pagos Móviles De México, S.A. De C.V.", ""], ["699", "Fondeadora", ""], ["706", "Arcus F.I., S.A. de C.V.", ""], ["722", "Mercado Pago", ""]];
+
+function bankBody(L, r) {
+  const T = L === "es";
+  const rows = BANK[r].map(([f, v]) => `<tr><td>${f[L]}</td><td>${v === "BLANK" ? blank(L) : (v[L] || "—")}</td></tr>`).join("");
+  const head = T ? "<th>Campo en Ariba</th><th>Qué capturar</th>" : "<th>Ariba field</th><th>What to enter</th>";
+  const intro = T ? `<p>En la sección <b>11</b> haga clic en ${ui("Agregar información bancaria")} y llene así:</p>` : `<p>In section <b>11</b> click ${ui("Add Bank Information")} and fill it in like this:</p>`;
+  let extra = "";
+  if (r === "mx") {
+    const list = BANKS_MX.map(([k, n, sw]) => `<tr><td>${k}</td><td>${esc(n)}</td><td${sw ? "" : ' class="none"'}>${sw ? esc(sw) : "—"}</td></tr>`).join("");
+    extra = `
+      <div class="tool">
+        <h3>${T ? "¿Cuál es mi clave bancaria?" : "What is my bank key?"}</h3>
+        <p>${T ? "Son los 3 primeros dígitos de su CLABE interbancaria. Por ejemplo, si su CLABE empieza con <b>012</b>, en Clave bancaria escriba <b>012</b>." : "It's the first 3 digits of your CLABE. For example, if your CLABE starts with <b>012</b>, enter <b>012</b> as the bank key."}</p>
+        <div class="anatomy" aria-label="CLABE">
+          <div class="key"><b>012</b><span>${T ? "Clave bancaria" : "Bank key"}</span></div>
+          <div><b>180</b><span>${T ? "Plaza" : "City"}</span></div>
+          <div><b>01234567890</b><span>${T ? "Cuenta" : "Account"}</span></div>
+          <div><b>1</b><span>${T ? "Verificador" : "Check digit"}</span></div>
+        </div>
+        <p>${T ? "En Número de cuenta van los 18 dígitos completos. Ejemplo ilustrativo, no es una cuenta real." : "The account number field takes all 18 digits. Illustrative example, not a real account."}</p>
+        <div class="banks"><table>
+          <thead><tr><th>${T ? "Clave" : "Key"}</th><th>${T ? "Banco" : "Bank"}</th><th>SWIFT</th></tr></thead>
+          <tbody>${list}</tbody>
+        </table></div>
+      </div>`;
+  }
+  const save = note(T ? `<b>Importante:</b> el botón ${ui("Guardar")} de esta sección solo guarda la información bancaria. Al terminar todo el cuestionario, todavía debe hacer clic en ${ui("Enviar respuesta completa")}.` : `<b>Important:</b> ${ui("Save")} in this section only saves the banking information. When the whole questionnaire is done, you still need to click ${ui("Submit Full Response")}.`, true);
+  return `${intro}<div class="table"><table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>${extra}${save}`;
+}
+
+/* ---------- Questionnaire guide (from the registration videos) ---------- */
+// [question number, question, what to answer, optional tip]
+const Q = (n, q, a, t) => ({ n, q, a, t });
+const QGUIDE = {
+  la: (r) => [
+    { h: { es: "Inicio", en: "Start" }, img: "la-q-start", items: [
+      Q("2", { es: "¿Está dispuesto y es capaz de transmitir y recibir electrónicamente Órdenes de Compra y Confirmaciones de Pedido?", en: "Are you willing and able to send and receive Purchase Orders and Order Confirmations electronically?" }, { es: "Sí", en: "Yes" }),
+      Q("4", { es: "¿Está realizando una modificación al cuestionario?", en: "Are you making a change to the questionnaire?" }, { es: "No, si es su primer registro", en: "No, if this is your first registration" },
+        { es: "Elija Sí solo para actualizar datos ya aprobados. Se abrirán las preguntas 5 a 8 (nombre, puesto, correo y las indicaciones del cambio).", en: "Choose Yes only to update data that was already approved. Questions 5 to 8 will open (name, job title, email and change instructions)." })
+    ] },
+    { h: { es: "9 · Términos y condiciones", en: "9 · Terms and conditions" }, img: "la-q-terms", items: [
+      Q("9.1", { es: "¿Acepta los términos y condiciones?", en: "Do you agree to the terms and conditions?" }, { es: "Sí, después de leerlos en Referencias", en: "Yes, after reading them under References" }),
+      Q("9.2", { es: "Adjuntar el Due Diligence firmado", en: "Attach the signed Due Diligence" }, { es: "Descárguelo en Referencias, llene y firme sus 2 páginas y súbalo con Adjuntar un archivo", en: "Download it from References, fill in and sign its 2 pages, and upload it with Attach a file" }),
+      Q("9.3", { es: "Acuse de Política de Ética de Proveedores firmado", en: "Signed Supplier Ethics Policy acknowledgement" }, { es: "Descárguelo en Referencias; sus 7 páginas van firmadas por el representante legal", en: "Download it from References; all 7 pages must be signed by the legal representative" },
+        { es: "Suba en cada pregunta el documento que le corresponde. Un archivo equivocado regresa su registro.", en: "Upload the matching document to each question. A wrong file sends your registration back." })
+    ] },
+    { h: { es: "10 · Información general", en: "10 · General information" }, img: "la-q-general", items: [
+      Q("10.1", { es: "Nombre completo del proveedor", en: "Supplier full name" }, { es: "Su razón social completa", en: "Your full legal company name" }),
+      Q("10.2", { es: "País del proveedor", en: "Supplier country" }, { es: "Su país", en: "Your country" }, { es: "Puede venir precargado con otro país. Revíselo y cámbielo.", en: "It may come prefilled with another country. Check it and change it." }),
+      Q("10.3", { es: "Persona física", en: "Individual or company" }, { es: "Persona Moral (empresa) o Persona Física, según su caso", en: "Company (Persona Moral) or individual (Persona Física), as applies" }),
+      Q("10.4–10.6", { es: "Código de país y teléfonos", en: "Country code and phone numbers" }, { es: "Código de su país, teléfono principal y móvil", en: "Your country code, main phone and mobile" },
+        { es: "Escriba solo números: sin espacios, guiones ni paréntesis.", en: "Numbers only: no spaces, dashes or brackets." }),
+      Q("10.7", { es: "Dirección principal", en: "Main address" }, { es: "Haga clic en Mostrar más y llene calle, número, código postal, ciudad, país y estado", en: "Click Show more and fill in street, number, postal code, city, country and state" }),
+      Q("10.8", { es: "Correos para órdenes de compra y para cuentas por cobrar", en: "Emails for purchase orders and accounts receivable" }, { es: "Correos de su empresa que se revisen todos los días", en: "Company mailboxes that someone checks every day" },
+        { es: "Ponga un solo correo en cada campo. Ahí llegarán sus órdenes de compra y avisos de cobranza.", en: "Enter only one email per field. Purchase orders and accounts receivable notices go there." })
+    ] },
+    { h: { es: "11 · Información bancaria", en: "11 · Banking information" }, img: "la-q-bank", items: [
+      Q("11", { es: "Agregar información bancaria", en: "Add bank information" }, { es: "Vea la sección Información bancaria de esta guía", en: "See the Banking information section of this guide" })
+    ] },
+    { h: { es: "12–13 · Información fiscal y retención", en: "12–13 · Tax information and withholding" }, img: "la-q-fiscal", items: [
+      Q("12.1", { es: "Número de identificación fiscal", en: "Tax identification number" },
+        r === "mx" ? { es: "País/región: México (MX). En Mexico: RFC escriba el RFC de la organización", en: "Country/region: Mexico (MX). Enter the organization's RFC in Mexico: RFC" } : { es: "Elija su país y escriba su registro fiscal: NIT, RUC, NRC, RUT, Tax ID o su equivalente", en: "Choose your country and enter your tax registration: NIT, RUC, NRC, RUT, Tax ID or equivalent" }),
+      Q("13.1", { es: "¿El servicio o bien otorgado requiere retención de impuestos?", en: "Does the service or good require tax withholding?" }, { es: "Sí o No, según su caso", en: "Yes or No, as applies" },
+        { es: "Si elige Sí, llene también el tipo (13.2) y el porcentaje (13.3) de retención.", en: "If you choose Yes, also fill in the withholding type (13.2) and percentage (13.3)." })
+    ] },
+    { h: { es: "14 · Documentos", en: "14 · Documents" }, img: r === "mx" ? "la-q-repse" : "la-q-docs", items: r === "mx" ? [
+      Q("14.13", { es: "Estado de cuenta", en: "Bank statement" }, { es: "Con la CLABE visible, no mayor a 3 meses", en: "CLABE visible, no older than 3 months" }),
+      Q("14.18", { es: "Acta / escritura constitutiva", en: "Articles of incorporation" }, { es: "Donde aparezca el poder del representante legal que firmó los documentos", en: "Showing the powers of the legal representative who signed the documents" }),
+      Q("14.20", { es: "Constancia de Situación Fiscal", en: "Tax status certificate" }, { es: "No mayor a 3 meses", en: "No older than 3 months" }),
+      Q("14.21", { es: "Identificación oficial del representante legal", en: "Legal representative's official ID" }, { es: "Vigente, por ambos lados", en: "Valid, both sides" }),
+      Q("14.22", { es: "¿Está en el padrón REPSE?", en: "Are you registered in REPSE?" }, { es: "Sí o No", en: "Yes or No" },
+        { es: "Sí: suba el certificado REPSE y las cartas de cumplimiento del IMSS e INFONAVIT en un mismo PDF (14.23 y 14.24). No: suba una carta membretada, firmada por el representante legal, que explique que no son sujetos a REPSE por su giro.", en: "Yes: upload the REPSE certificate plus the IMSS and INFONAVIT compliance letters in one PDF (14.23 and 14.24). No: upload a letter on company letterhead, signed by the legal representative, explaining you are not subject to REPSE because of your line of business." })
+    ] : [
+      Q("14", { es: "Lista de documentos", en: "Document list" }, { es: "Registro fiscal, comprobante de domicilio fiscal (máx. 3 meses), identificación del representante legal o dueño, acta constitutiva, poderes cuando aplique y estado de cuenta o carta del banco firmada y sellada", en: "Tax registration, proof of tax address (max. 3 months), ID of the legal representative or owner, articles of incorporation, powers when applicable, and a bank statement or signed and stamped bank letter" },
+        { es: "El orden y el nombre de los documentos cambian según el país. Suba siempre el documento oficial vigente (vea Documentos requeridos).", en: "Document order and names vary by country. Always upload the current official document (see Required documents)." })
+    ] }
+  ],
+  na: () => [
+    { h: { es: "Inicio", en: "Start" }, img: "na-q-start", items: [
+      Q("2", { es: "¿Está dispuesto y es capaz de transmitir y recibir electrónicamente Órdenes de Compra y Confirmaciones de Pedido?", en: "Are you willing and able to transmit and receive Purchase Orders and Order Confirmations electronically?" }, { es: "Sí", en: "Yes" }),
+      Q("4", { es: "¿Está realizando una modificación al cuestionario?", en: "Are you making a modification to the questionnaire?" }, { es: "No, si es su primer registro", en: "No, if this is your first registration" })
+    ] },
+    { h: { es: "9 · Términos y condiciones", en: "9 · Terms and Conditions" }, img: "na-q-terms", items: [
+      Q("9.1", { es: "¿Acepta los términos y condiciones?", en: "Do you agree to the terms and conditions?" }, { es: "Sí, después de leerlos en Referencias", en: "Yes, after reading them under References" }),
+      Q("9.2", { es: "Adjuntar el Due Diligence firmado", en: "Please attach the signed Due Diligence" }, { es: "Descargue la carta en Referencias, llene y firme sus 2 páginas y súbala", en: "Download the declaration letter from References, complete and sign its 2 pages, and upload it" }),
+      Q("9.3", { es: "Acuse de Política de Ética de Proveedores firmado", en: "Supplier Ethics Policy Acknowledgment Signed" }, { es: "Sus 7 páginas van llenas y firmadas por el representante legal", en: "All 7 pages completed and signed by the legal representative" })
+    ] },
+    { h: { es: "10 · Información general", en: "10 · General Supplier Information" }, img: "na-q-emails", items: [
+      Q("10.1–10.6", { es: "Nombre, país, tipo de persona y teléfonos", en: "Name, country, entity type and phones" }, { es: "Su razón social, su país, si es persona física o empresa, y un teléfono de contacto", en: "Your legal name, your country, individual or legal entity, and a contact phone" },
+        { es: "En teléfonos escriba solo números.", en: "Phone numbers: digits only." }),
+      Q("10.7", { es: "Dirección principal", en: "Main address" }, { es: "Calle, número, código postal, ciudad, país y estado", en: "Street, house number, zip code, city, country and state" },
+        { es: "Revise que el país de la dirección sea el suyo.", en: "Make sure the address country is yours." }),
+      Q("10.8", { es: "Correos para órdenes de compra y cuentas por cobrar", en: "Emails for purchase orders and accounts receivable" }, { es: "Correos de su empresa que se revisen a diario", en: "Company mailboxes checked daily" },
+        { es: "Un solo correo por campo.", en: "Only one email address per field." })
+    ] },
+    { h: { es: "11 · Información bancaria", en: "11 · Banking Information" }, img: "na-q-bank", items: [
+      Q("11", { es: "Agregar información bancaria", en: "Add Bank Information" }, { es: "Vea la sección Información bancaria de esta guía", en: "See the Banking information section of this guide" })
+    ] },
+    { h: { es: "12–13 · Información fiscal y retención", en: "12–13 · Tax Information and Withholding" }, img: "na-q-tax", items: [
+      Q("12.1", { es: "Número de identificación fiscal", en: "Tax Identification Number" }, { es: "Elija su país. En Estados Unidos es el Employer Identification Number (EIN)", en: "Choose your country. In the US it's the Employer Identification Number (EIN)" }),
+      Q("13.1", { es: "¿El servicio o bien requiere retención de impuestos?", en: "Does the service/good require a withholding tax?" }, { es: "Yes o No, según su caso", en: "Yes or No, as applies" },
+        { es: "Si elige Yes, llene la tasa (13.2) y el porcentaje (13.3).", en: "If you choose Yes, fill in the rate (13.2) and percentage (13.3)." })
+    ] },
+    { h: { es: "14 · Documentos", en: "14 · Documents" }, img: "na-q-docs", items: [
+      Q("14.9", { es: "Estatutos o acta constitutiva", en: "Bylaws or articles of incorporation" }, { es: "PDF", en: "PDF" }),
+      Q("14.10", { es: "Certificado de residencia fiscal", en: "Certificate of Tax Residence" }, { es: "PDF", en: "PDF" }),
+      Q("14.11", { es: "Formulario W-9 o W-8BEN", en: "Form W-9 or Form W-8BEN" }, { es: "Según su giro; aplica solo para Estados Unidos o Europa", en: "Depending on your business line; USA or Europe only" }),
+      Q("14.12", { es: "Identificación oficial del representante legal", en: "Valid official identification of the legal representative" }, { es: "Vigente", en: "Valid" }),
+      Q("14.13", { es: "Estado de cuenta", en: "Account Statement" }, { es: "O carta del banco", en: "Or bank letter" }),
+      Q("14.15", { es: "Documento que acredite poderes del representante legal", en: "Document that accredits powers of the Legal Representative" }, { es: "Certificate of Incumbency o equivalente", en: "Certificate of Incumbency or equivalent" })
+    ] }
+  ]
+};
+
+function questionBody(L, r) {
+  const T = L === "es";
+  const flow = FLOW_OF[r];
+  const groups = QGUIDE[flow](r).map(g => {
+    const fig = `<figure class="shot"><button type="button" data-zoom="${CONFIG.imgBase}${g.img}.jpg" data-cap="${esc(g.h[L])}" aria-label="${esc(g.h[L])}: ${UI[L].zoom}"><span class="chrome"><i></i><i></i><i></i></span><img src="${CONFIG.imgBase}${g.img}.jpg" alt="${esc(g.h[L])}" loading="lazy"></button><figcaption>${g.h[L]} · ${UI[L].zoom}</figcaption></figure>`;
+    const items = g.items.map(q => `<li><span class="qn">${q.n}</span><div><span class="qq">${q.q[L]}</span><span class="qa">${q.a[L]}</span>${q.t ? `<span class="qt">${q.t[L]}</span>` : ""}</div></li>`).join("");
+    return `<div class="qgroup"><h3>${g.h[L]}</h3><ul class="qlist">${items}</ul>${fig}</div>`;
+  }).join("");
+  const tips = T ? [
+    "Tiene <b>72 horas (3 días)</b> para completar y enviar el cuestionario. Arriba a la derecha verá el <b>Tiempo restante</b>; si no termina de una vez, use Guardar borrador.",
+    "Toda la información y los documentos son confidenciales y se usan solo para su registro y validación interna.",
+    "Los campos con asterisco rojo (*) son obligatorios.",
+    "Para subir un archivo: Adjuntar un archivo → Seleccionar archivo → Aceptar.",
+    "Si el navegador le sugiere tarjetas o datos guardados, ignórelos. Escriba solo los datos de su empresa."
+  ] : [
+    "You have <b>72 hours (3 days)</b> to complete and submit the questionnaire. The <b>Time remaining</b> counter is at the top right; if you can't finish in one go, use Save Draft.",
+    "All information and documents are confidential and used only for your registration and internal validation.",
+    "Fields with a red asterisk (*) are required.",
+    "To upload a file: Attach a file → Choose File → Accept.",
+    "If your browser suggests saved cards or personal details, ignore them. Enter only your company's data."
+  ];
+  return `<p>${T ? "Así se contesta cada pregunta del <b>Supplier Registration Questionnaire</b>, en el orden en que aparece." : "Here's how to answer each question of the <b>Supplier Registration Questionnaire</b>, in order."}</p>
+    ${note(`<b>${T ? "Antes de empezar" : "Before you start"}</b><ul class="tips">${tips.map(t => `<li>${t}</li>`).join("")}</ul>`, true)}
+    ${groups}`;
+}
+
+/* ---------- Documents ---------- */
+const DOCS = {
+  mx: [
+    { es: ["Estado de cuenta bancario", "Con la CLABE interbancaria de 18 dígitos visible. No mayor a 3 meses."], en: ["Bank statement", "With the 18-digit CLABE visible. No older than 3 months."] },
+    { es: ["Acta constitutiva", "Donde aparezca el poder del representante legal que firmó los documentos. Si el poder notarial es un documento aparte, una ambos en un solo PDF."], en: ["Articles of incorporation (acta constitutiva)", "Showing the powers of the legal representative who signed the documents. If the power of attorney is a separate document, merge both into one PDF."] },
+    { es: ["Constancia de Situación Fiscal", "No mayor a 3 meses."], en: ["Tax status certificate (Constancia de Situación Fiscal)", "No older than 3 months."] },
+    { es: ["Identificación oficial vigente del representante legal", "Por ambos lados y con la firma visible."], en: ["Valid official ID of the legal representative", "Both sides, with the signature visible."] },
+    {
+      es: ["Registro REPSE o carta de no aplicación", "Elija el caso que le corresponde:"], en: ["REPSE registration or non-applicability letter", "Pick the case that applies to you:"],
+      sub: {
+        es: ["<b>No es sujeto a REPSE:</b> carta en hoja membretada, firmada por el representante legal, que explique que no son sujetos a REPSE por su giro comercial.", "<b>Sí es sujeto a REPSE:</b> certificado REPSE vigente más las opiniones de cumplimiento del IMSS e INFONAVIT, todo en un solo PDF."],
+        en: ["<b>Not subject to REPSE:</b> a letter on company letterhead, signed by the legal representative, stating you do not hold that registration.", "<b>Subject to REPSE:</b> a valid REPSE certificate plus the IMSS and INFONAVIT compliance opinions, all in one PDF."]
+      }
+    }
+  ],
+  latam: [
+    { es: ["Acta o escritura constitutiva", "Con sello de registro y sus modificaciones."], en: ["Articles or deed of incorporation", "With the registry stamp and any amendments."] },
+    { es: ["Cédula de identificación fiscal", "Tarjeta tributaria NIT, cédula RUC o constancia de inscripción al RUT, según su país."], en: ["Tax identification document", "NIT tax card, RUC certificate or RUT registration, depending on your country."] },
+    { es: ["Identificación oficial vigente del representante legal", ""], en: ["Valid official ID of the legal representative", ""] },
+    { es: ["Documento que acredite los poderes del representante o apoderado legal", ""], en: ["Document proving the powers of the legal representative or attorney-in-fact", ""] },
+    { es: ["Estado de cuenta", "Si no tiene, entregue una carta membretada del banco con sello y firma del ejecutivo de cuenta."], en: ["Bank statement", "If you do not have one, provide a letter on bank letterhead with the account executive's stamp and signature."] },
+    { es: ["Comprobante de domicilio", "No mayor a 3 meses."], en: ["Proof of address", "No older than 3 months."] }
+  ],
+  sv: [
+    { es: ["NRC (Número de Registro de Contribuyentes)", ""], en: ["NRC (Taxpayer Registration Number)", ""] },
+    { es: ["Comprobante de domicilio fiscal", "No mayor a 3 meses."], en: ["Proof of tax address", "No older than 3 months."] },
+    { es: ["DUI, pasaporte o carnet", "Del representante legal o de la persona natural dueña del negocio."], en: ["DUI, passport or ID card", "Of the legal representative or of the individual who owns the business."] },
+    { es: ["Escritura de constitución y sus modificaciones", ""], en: ["Deed of incorporation and amendments", ""] },
+    { es: ["Documento que acredite los poderes del representante o apoderado legal", ""], en: ["Document proving the powers of the legal representative or attorney-in-fact", ""] },
+    { es: ["Constancia de Solvencia Fiscal", ""], en: ["Tax solvency certificate (Constancia de Solvencia Fiscal)", ""] },
+    { es: ["Estado de cuenta", ""], en: ["Bank statement", ""] },
+    { es: [`Acuse firmado de la Política de PLD de ${C}`, "Prevención de Lavado de Dinero, Financiamiento al Terrorismo y a la Proliferación de Armas de Destrucción Masiva."], en: [`Signed acknowledgement of ${C}'s AML policy`, "Anti-money laundering, counter-terrorist financing and counter-proliferation financing policy."] }
+  ],
+  na: [
+    { es: ["Estatutos de la empresa (Bylaws)", ""], en: ["Bylaws", ""] },
+    { es: ["Certificado de residencia fiscal", ""], en: ["Tax Residency Certificate", ""] },
+    { es: ["Número de identificación fiscal (Tax ID)", ""], en: ["Tax ID number", ""] },
+    { es: ["Formulario W-9 o W-8BEN", "Según aplique."], en: ["Form W-9 or Form W-8BEN", "As applicable."] },
+    { es: ["Identificación del representante legal", "Pasaporte, documento nacional de identidad o documento de ciudadanía."], en: ["Legal representative identification", "Passport, national identity document or citizenship document."] },
+    { es: ["Documento que acredite los poderes del representante legal", "Certificate of Incumbency o documento equivalente."], en: ["Document certifying the powers of the legal representative", "Certificate of Incumbency or equivalent document."] },
+    { es: ["Estado de cuenta bancario", "Si no tiene, entregue una carta en papel membretado del banco con sello y firma del ejecutivo de cuenta."], en: ["Bank account statement", "If not available, provide a letter on official bank letterhead with the account executive's stamp and signature."] }
+  ]
+};
+
+function store(k, v) {
+  try {
+    if (v === undefined) return JSON.parse(localStorage.getItem(k) || "null");
+    localStorage.setItem(k, JSON.stringify(v));
+  } catch (e) { return null; }
+}
+
+function docsBody(L, r, country) {
+  const done = store("portal-docs-" + country) || [];
+  const cname = COUNTRIES.find(c => c.id === country)[L];
+  const who = L === "es" ? `Lista para <b>${cname}</b>. Formato PDF o imagen legible.` : `List for <b>${cname}</b>. PDF or clearly legible image.`;
+  const items = DOCS[r].map((doc, i) => {
+    const [t, d] = doc[L];
+    const sub = doc.sub ? `<div class="sub">${doc.sub[L].map(s => `<div>${s}</div>`).join("")}</div>` : "";
+    return `<li><label><input type="checkbox" id="doc-${country}-${i}" data-i="${i}" ${done.includes(i) ? "checked" : ""}><span><span class="t">${t}</span>${d ? `<span class="d">${d}</span>` : ""}${sub}</span></label></li>`;
+  }).join("");
+  const tip = L === "es" ? "Marque cada documento cuando lo tenga listo. Su avance se guarda solo en este navegador." : "Tick each document once you have it ready. Your progress is saved in this browser only.";
+  return `<div class="who">${who}</div>
+    <div class="progress"><div class="meter"><i id="meter"></i></div><span id="progressTxt"></span></div>
+    <ul class="checks" id="checks">${items}</ul>
+    ${note(`<b>Tip:</b> ${tip}`, true)}`;
+}
+
+/* ---------- FAQ ---------- */
+const FAQ = [
+  { q: { es: "Ariba dice que ya existen cuentas con mi razón social. ¿Qué hago?", en: "Ariba says accounts with my company name already exist. What do I do?" },
+    a: { es: `Es normal, Ariba siempre lo muestra. Si reconoce esa cuenta y tiene acceso, use ${ui("Usar cuenta existente")}. Si no la reconoce, haga clic en ${ui("Crear cuenta nueva")} y continúe.`, en: `That's normal, Ariba always shows it. If you recognize the account and have access, use ${ui("Use Existing Account")}. If not, click ${ui("Create New Account")} and continue.` } },
+  { q: { es: "No me llegó el correo de invitación. ¿Qué hago?", en: "I didn't get the invitation email. What should I do?" },
+    a: { es: `Revise la carpeta de correo no deseado o spam y busque mensajes del dominio ${ui("@ansmtp.ariba.com")}. Si aun así no aparece, contáctenos por los medios del <b>Centro de ayuda</b> y se lo reenviamos.`, en: `Check your spam or junk folder for messages from ${ui("@ansmtp.ariba.com")}. If it still isn't there, contact us through the <b>Help center</b> and we'll resend it.` } },
+  { q: { es: "¿Tiene algún costo registrarme en Ariba Network?", en: "Does registering on Ariba Network cost anything?" },
+    a: { es: "No. Crear su cuenta en Ariba Network para registrarse como proveedor es gratuito, como lo indica el correo de invitación.", en: "No. Creating an Ariba Network account to register as a supplier is free, as the invitation email says." } },
+  { q: { es: "Ya tengo cuenta de Ariba con otro cliente. ¿Debo crear otra?", en: "I already have an Ariba account with another customer. Do I need a new one?" },
+    a: { es: `No. Abra el enlace de la invitación y elija ${ui("Usar cuenta existente")}. Después verifique que el cliente seleccionado sea ${C}.`, en: `No. Open the invitation link and choose ${ui("Use Existing Account")}. Then make sure the selected customer is ${C}.` } },
+  { q: { es: "¿Qué escribo en el campo DUNS Number?", en: "What do I enter in the DUNS Number field?" },
+    a: { es: "Nada. Ese campo se deja en blanco.", en: "Nothing. Leave that field blank." } },
+  { q: { es: "Mi código de un solo uso ya no funciona.", en: "My one-time password no longer works." },
+    a: { es: "El código es válido durante 30 minutos. Si venció, solicite uno nuevo desde la misma pantalla.", en: "The code is valid for 30 minutes. If it expired, request a new one from the same screen." } },
+  { q: { es: "Olvidé mi usuario o contraseña de Ariba.", en: "I forgot my Ariba username or password." },
+    a: { es: `En la pantalla de inicio de sesión use ${ui("¿Ha olvidado el nombre de usuario?")} o ${ui("¿Ha olvidado la contraseña?")}.`, en: `On the login screen use ${ui("Forgot username")} or ${ui("Forgot password")}.` } },
+  { q: { es: "¿Puedo guardar el cuestionario y terminarlo después?", en: "Can I save the questionnaire and finish later?" },
+    a: { es: `Sí. Use ${ui("Guardar borrador")} y vuelva cuando quiera desde ${ui("Ariba Proposals and Questionnaires")}.`, en: `Yes. Click ${ui("Save Draft")} and come back any time from ${ui("Ariba Proposals and Questionnaires")}.` } },
+  { q: { es: "¿En qué formato subo los documentos?", en: "What format should documents be in?" },
+    a: { es: "En PDF o como imagen legible. Revise la lista de su país en <b>Documentos requeridos</b>.", en: "PDF or a clearly legible image. See your country's list under <b>Required documents</b>." } },
+  { q: { es: "¿Dónde encuentro mi CLABE interbancaria?", en: "Where do I find my CLABE?" }, only: ["mx"],
+    a: { es: "Aparece en su estado de cuenta bancario y tiene 18 dígitos. Sus 3 primeros dígitos son la clave bancaria: búsquela en la tabla de <b>Información bancaria</b>.", en: "It appears on your bank statement and has 18 digits. The first 3 digits are the bank key: find it in the table under <b>Banking information</b>." } },
+  { q: { es: "Mi empresa no está registrada en el REPSE. ¿Qué entrego?", en: "My company is not registered in REPSE. What do I submit?" }, only: ["mx"],
+    a: { es: "Una carta en hoja membretada, firmada por el representante legal, que indique que no cuenta con dicho registro.", en: "A letter on company letterhead, signed by the legal representative, stating you do not hold that registration." } },
+  { q: { es: "No tengo estado de cuenta. ¿Qué entrego?", en: "I don't have a bank statement. What can I submit?" }, only: ["latam", "na"],
+    a: { es: "Una carta en papel membretado del banco con sello y firma del ejecutivo de cuenta.", en: "A letter on official bank letterhead with the account executive's stamp and signature." } },
+  { q: { es: "¿Cuánto tiempo tengo para contestar el cuestionario?", en: "How long do I have to complete the questionnaire?" },
+    a: { es: `72 horas (3 días) desde que se habilita. Puede usar ${ui("Guardar borrador")} y continuar después dentro de ese plazo.`, en: `72 hours (3 days) from when it opens. You can use ${ui("Save Draft")} and continue later within that time.` } },
+  { q: { es: "¿Mi información es confidencial?", en: "Is my information confidential?" },
+    a: { es: `Sí. La información y los documentos se usan solo para su registro y validación interna en ${C}, y no se comparten con terceros.`, en: `Yes. Information and documents are used only for your registration and internal validation at ${C}, and are not shared externally.` } },
+  { q: { es: "¿Cómo sé si mi registro fue aprobado?", en: "How will I know my registration was approved?" },
+    a: { es: "Después de enviar la respuesta completa, nuestro equipo la revisa. Si hace falta algún cambio se lo pediremos; cuando todo esté correcto, lo aprobamos y le llega por Ariba el correo de confirmación de la relación comercial activa.", en: "After you submit the full response, our team reviews it. If anything needs changing we'll ask you; once everything is correct, we approve it and you receive the confirmation email of the active business relationship through Ariba." } }
+];
+
+function faqBody(L, r) {
+  const items = FAQ.filter(f => !f.only || f.only.includes(r)).map(f =>
+    `<details data-text="${esc((f.q[L] + " " + f.a[L].replace(/<[^>]+>/g, "")).toLowerCase())}"><summary>${f.q[L]}</summary><div class="a">${f.a[L]}</div></details>`).join("");
+  return `<div class="faq" id="faqList">${items}</div>`;
+}
+
+/* ---------- Help center (contact channels only: the portal never asks for data) ---------- */
+function helpBody(L, r) {
+  const T = L === "es";
+  const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { return ""; } })();
+  const channels = [];
+  if (CONFIG.supportEmail) channels.push(`<div class="channel"><h3>${T ? "Correo" : "Email"}</h3><p>${T ? "Escríbanos con el nombre de su empresa y el paso donde se quedó." : "Write to us with your company name and the step where you got stuck."}</p><div class="val">${esc(CONFIG.supportEmail)}</div><div class="row"><button type="button" class="btn small" data-copy="${esc(CONFIG.supportEmail)}">${UI[L].copy}</button></div></div>`);
+  if (CONFIG.supportPhone) channels.push(`<div class="channel"><h3>${T ? "Teléfono" : "Phone"}</h3><p>${CONFIG.supportHours[L]}</p><div class="val">${esc(CONFIG.supportPhone)}</div><div class="row"><button type="button" class="btn small" data-copy="${esc(CONFIG.supportPhone)}">${UI[L].copy}</button></div></div>`);
+  // Direct calls with the team are offered to national (Mexico) suppliers only
+  if (r === "mx") channels.push(`<div class="channel"><h3>${T ? "Llamada directa con nuestro equipo" : "Direct call with our team"}</h3><p>${T ? "Exclusivo para proveedores nacionales. Le acompañamos en una llamada para completar el registro juntos." : "For national (Mexico) suppliers only. We walk you through the registration on a call."}</p>${CONFIG.bookingUrl
+    ? `<div class="row"><a class="btn primary small" href="${esc(CONFIG.bookingUrl)}" target="_blank" rel="noopener">${T ? "Agendar llamada" : "Book a call"}</a></div>`
+    : (CONFIG.supportEmail ? `<p>${T ? "Pídala por correo indicando dos horarios que le acomoden." : "Request it by email with two times that work for you."}</p>` : "")}</div>`);
+  if (CONFIG.supportHours && !CONFIG.supportPhone) channels.push(`<div class="channel"><h3>${T ? "Horario de atención" : "Support hours"}</h3><p>${CONFIG.supportHours[L]}</p>${tz ? `<p>${T ? "Su zona horaria" : "Your time zone"}: <b>${esc(tz)}</b></p>` : ""}</div>`);
+  return `<div class="helpGrid">${channels.join("")}</div>`;
+}
+
+/* ---------- State + render ---------- */
+const state = { country: "mx", lang: "es", has: store("portal-has") || "all", shots: store("portal-shots") !== false };
+
+function readInitial() {
+  let lang = null, country = null;
+  try {
+    const q = new URLSearchParams(location.search);
+    country = (q.get("pais") || q.get("country") || "").toLowerCase() || null;
+    lang = (q.get("lang") || q.get("idioma") || "").toLowerCase() || null;
+  } catch (e) {}
+  const h = (location.hash || "").replace("#", "").toLowerCase();
+  const m = h.match(/^([a-z]{2})(?:-(es|en))?$/);
+  if (m) { country = m[1]; lang = m[2] || lang; }
+  if (country && COUNTRIES.some(c => c.id === country)) state.country = country;
+  const def = COUNTRIES.find(c => c.id === state.country).lang;
+  state.lang = (lang === "es" || lang === "en") ? lang : def;
+  if (h === "ayuda" || h === "help") state.jump = "contacto";
+  if (h === "preguntas" || h === "faq") state.jump = "preguntas";
+}
+
+function syncHash() {
+  try { history.replaceState(null, "", "#" + state.country + "-" + state.lang); } catch (e) {}
+}
+
+function sectionHtml(s, i, L, c, flow) {
+  const body = s.body ? s.body(L, c.region, c.id) : (INTROS[s.id] ? INTROS[s.id][L] : "") + stepsHtml(flow, s.id, L) + (NOTES[s.id] ? NOTES[s.id][L] : "");
+  return `<section class="card" id="sec-${s.id}">
+      <header><span class="num">${i}</span><h2>${s.title[L]}</h2></header>
+      ${body}
+    </section>`;
+}
+
+function render() {
+  const L = state.lang, T = UI[L];
+  const c = COUNTRIES.find(x => x.id === state.country);
+  const flow = FLOW_OF[c.region];
+  document.documentElement.lang = L;
+  document.title = L === "es" ? "Portal de Proveedores" : "Supplier Portal";
+  document.body.classList.toggle("noShots", !state.shots);
+
+  document.getElementById("brandName").textContent = C;
+  document.getElementById("brandSub").textContent = T.sub;
+  document.getElementById("lblCountry").textContent = T.country;
+  document.getElementById("helpTop").textContent = T.help;
+  const sel = document.getElementById("country");
+  sel.innerHTML = COUNTRIES.map(x => `<option value="${x.id}" ${x.id === c.id ? "selected" : ""}>${x[L]}</option>`).join("");
+  ["es", "en"].forEach(l => document.getElementById("lang-" + l).setAttribute("aria-pressed", String(l === L)));
+
+  document.getElementById("eyebrow").textContent = `${T.eyebrow} · ${c[L]}`;
+  document.getElementById("title").textContent = T.title;
+  document.getElementById("lead").textContent = T.lead;
+  document.getElementById("route").innerHTML = T.stages.map((s, i) => `<div class="stop"><div class="dot"></div><small>${T.stage} ${i + 1}</small><strong>${s}</strong></div>`).join("");
+  document.getElementById("ask").innerHTML = `<strong>${T.askQ}</strong>
+    <div class="seg" role="group" aria-label="${esc(T.askQ)}">
+      <button type="button" data-has="no" aria-pressed="${state.has === "no"}">${T.askNo}</button>
+      <button type="button" data-has="yes" aria-pressed="${state.has === "yes"}">${T.askYes}</button>
+      <button type="button" data-has="all" aria-pressed="${state.has === "all"}">${T.askAll}</button>
+    </div>
+    <label class="opt" for="shotsToggle"><input type="checkbox" id="shotsToggle" ${state.shots ? "checked" : ""}>${T.shots}</label>`;
+
+  const pdfRegion = CONFIG.pdfs[c.region] || CONFIG.pdfs[c.id];
+  const pdf = pdfRegion && (pdfRegion[L] || pdfRegion.es || pdfRegion.en);
+  document.getElementById("actions").innerHTML =
+    `<button class="btn primary" type="button" id="startBtn">${T.start}</button>` +
+    (pdf ? `<a class="btn" href="${encodeURI(pdf)}" target="_blank" rel="noopener">${T.pdf}</a>` : "");
+
+  const visible = SECTIONS.filter(s => !s.only || state.has === "all" || state.has === s.only);
+  document.getElementById("toc").innerHTML =
+    visible.map(s => `<button type="button" data-go="${s.id}" id="toc-${s.id}">${s.title[L]}</button>`).join("") +
+    `<div class="sep">${T.helpPart}</div>` +
+    HELP_SECTIONS.map(s => `<button type="button" data-go="${s.id}" id="toc-${s.id}">${s.title[L]}</button>`).join("");
+  document.getElementById("content").innerHTML =
+    `<div class="partTitle">${T.guide}</div>` +
+    visible.map((s, i) => sectionHtml(s, String(i + 1).padStart(2, "0"), L, c, flow)).join("") +
+    `<div class="partTitle">${T.helpPart}</div>` +
+    HELP_SECTIONS.map(s => sectionHtml(s, s.tag, L, c, flow)).join("");
+
+  document.getElementById("foot").textContent = T.foot(c[L]);
+
+  bindDynamic();
+  updateProgress();
+  syncHash();
+}
+
+function updateProgress() {
+  const box = document.getElementById("checks");
+  if (!box) return;
+  const all = box.querySelectorAll("input[type=checkbox]");
+  const n = [...all].filter(x => x.checked).length;
+  document.getElementById("meter").style.width = (all.length ? (n / all.length) * 100 : 0) + "%";
+  document.getElementById("progressTxt").textContent = UI[state.lang].progress(n, all.length);
+}
+
+function bindDynamic() {
+  const checks = document.getElementById("checks");
+  if (checks) checks.addEventListener("change", () => {
+    store("portal-docs-" + state.country, [...checks.querySelectorAll("input:checked")].map(x => Number(x.dataset.i)));
+    updateProgress();
+  });
+  document.getElementById("shotsToggle").addEventListener("change", (e) => {
+    state.shots = e.target.checked; store("portal-shots", state.shots);
+    document.body.classList.toggle("noShots", !state.shots);
+  });
+  observeSections();
+}
+
+function go(id) {
+  const el = document.getElementById("sec-" + id);
+  if (el) el.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+}
+
+function openZoom(src, cap) {
+  const lb = document.getElementById("lightbox");
+  lb.innerHTML = `<button type="button" id="lbClose">${UI[state.lang].close}</button><img src="${src}" alt="${esc(cap)}"><p>${esc(cap)}</p>`;
+  lb.hidden = false;
+  document.getElementById("lbClose").focus();
+}
+function closeZoom() { const lb = document.getElementById("lightbox"); lb.hidden = true; lb.innerHTML = ""; }
+
+let observer;
+function observeSections() {
+  if (observer) observer.disconnect();
+  if (!("IntersectionObserver" in window)) return;
+  observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const id = e.target.id.replace("sec-", "");
+        document.querySelectorAll(".toc button").forEach(b => b.classList.toggle("on", b.dataset.go === id));
+      }
+    });
+  }, { rootMargin: "-30% 0px -60% 0px" });
+  document.querySelectorAll("section.card").forEach(s => observer.observe(s));
+}
+
+// One delegated click handler for everything rendered dynamically
+document.addEventListener("click", (e) => {
+  const t = e.target;
+  const goBtn = t.closest("[data-go]");
+  if (goBtn) return go(goBtn.dataset.go);
+  if (t.closest("#startBtn")) return go("invitacion");
+  if (t.closest("#helpTop")) return go("contacto");
+  const has = t.closest("[data-has]");
+  if (has) { state.has = has.dataset.has; store("portal-has", state.has); render(); return go(state.has === "yes" ? "cuenta-existente" : state.has === "no" ? "cuenta-nueva" : "invitacion"); }
+  const zoom = t.closest("[data-zoom]");
+  if (zoom) return openZoom(zoom.dataset.zoom, zoom.dataset.cap);
+  if (t.closest("#lightbox")) return closeZoom();
+  const copy = t.closest("[data-copy]");
+  if (copy) {
+    const label = copy.textContent;
+    const done = () => { copy.textContent = UI[state.lang].copied; setTimeout(() => { copy.textContent = label; }, 1600); };
+    try {
+      navigator.clipboard.writeText(copy.dataset.copy).then(done).catch(() => {
+        const target = copy.closest(".channel").querySelector(".val");
+        if (target) { const r = document.createRange(); r.selectNodeContents(target); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+      });
+    } catch (err) {}
+  }
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeZoom(); });
+document.getElementById("country").addEventListener("change", (e) => { state.country = e.target.value; render(); });
+document.querySelectorAll("[data-lang]").forEach(b => b.addEventListener("click", () => { state.lang = b.dataset.lang; render(); }));
+
+readInitial();
+render();
+if (state.jump) setTimeout(() => go(state.jump), 50);
+</script>
+
+</body>
+</html>
